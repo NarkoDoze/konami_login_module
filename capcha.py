@@ -25,8 +25,8 @@ def getCapchaJsonFile():
     with open('hash.json', 'w') as outfile:
         json.dump(caplist, outfile)
 
-# Parse session value and capcha
-# Return
+# Parse session value and capcha and Login
+# Return cookie value that can be used for fake session
 def GetCookie():
     islogin = urlre.Request('https://p.eagate.573.jp/gate/p/login.html')
     soup = bs(urlre.urlopen(islogin).read(), 'html.parser')
@@ -64,6 +64,18 @@ def GetCookie():
 
     response = conn.getresponse()
     return regex.findall("(.*?);", response.getheader('Set-Cookie'))[0]
+
+# Get E-Amusement card code that is attached in this ID
+def getCardFromID(Cookie):
+    return "YOUR_CARD_CODE"
+
+# Detech E-Amusement card from this ID
+def detachCard(Cookie, CardCode):
+    return True
+
+# Attach E-Amusement card to this ID
+def attachCard(Cookie, CardCode, passwd):
+    return True
 
 if __name__ == "__main__":
     Cookie = GetCookie()
