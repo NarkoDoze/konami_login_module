@@ -8,7 +8,18 @@ import json
 import http.client
 
 picurl = "https://img-auth.service.konami.net/captcha/pic/"
-
+header = {
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Accept-Language": "ko-KR,ko;q=0.8,en-US;q=0.6,en;q=0.4",
+        "Cache-Control": "max-age=0",
+        "Connection": "keep-alive",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Host": "p.eagate.573.jp",
+        "Origin": "https://p.eagate.573.jp",
+        "Upgrade-Insecure-Requests": "1",
+        "User-Agent": "Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US) AppleWebKit/525.13 (KHTML, like Gecko) Chrome/0.2.149.29 Safari/525.13",
+}
 ## Use For Get Hash
 ## Only Need Run Once
 def getCapchaJsonFile():
@@ -35,7 +46,7 @@ def GetCookie():
     idximg = str(imagehash.average_hash(Image.open(urlre.urlopen(urlre.Request(picurl + idximg)))))
     capchas = regex.findall("value=\"(.*?)\"", str(soup.find_all("input", style="position:absolute;top:2px;left:2px;width:initial;")))
     hashcapchas = [str(imagehash.average_hash(Image.open(urlre.urlopen(urlre.Request(picurl + img))))) for img in capchas]
-    kcsess = regex.findall("value=\"(.*?)\"", str(soup.find_all("input", type="hidden")))[0]
+    kcsess = str(soup.find("input", type="hidden")['value'])
 
     data = {
         'KID': 'ENTER_YOUR_KONAMI_ID',
@@ -46,19 +57,9 @@ def GetCookie():
     hashed = json.load(open('hash.json'))
     data.update({'chk_c' + str(key): capchas[key] for ans in hashed[idximg] for key, capcha in enumerate(hashcapchas) if capcha == ans})
 
-    headers = {
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Accept-Language": "ko-KR,ko;q=0.8,en-US;q=0.6,en;q=0.4",
-        "Cache-Control": "max-age=0",
-        "Connection": "Keep-Alive",
-        "Content-Type": "application/x-www-form-urlencoded",
-        "Host": "p.eagate.573.jp",
-        "Origin": "https://p.eagate.573.jp",
-        "Referer": "https://p.eagate.573.jp/gate/p/login.html",
-        "Upgrade-Insecure-Requests": "1",
-        "User-Agent": "Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US) AppleWebKit/525.13 (KHTML, like Gecko) Chrome/0.2.149.29 Safari/525.13"
-    }
+    headers = dict(header)
+    headers.update({"Referer": "https://p.eagate.573.jp/gate/p/login.html"})
+
     conn = http.client.HTTPSConnection('p.eagate.573.jp', 443)
     conn.request("POST", "/gate/p/login.html", urlps.urlencode(data), headers)
 
@@ -67,20 +68,37 @@ def GetCookie():
 
 # Get E-Amusement card code that is attached in this ID
 def getCardFromID(Cookie):
-    return "YOUR_CARD_CODE"
+    listURL = "https://p.eagate.573.jp/gate/p/eamusement/detach/index.html"
+    # Need to use BeautifulSoup and Regex
+    return ["YOUR_CARD_CODE1", "YOUR_CARD_CODE2"]
 
 # Detech E-Amusement card from this ID
 def detachCard(Cookie, CardCode):
+    detachURL = "http://p.eagate.573.jp/gate/p/eamusement/detach/setting1.html?ucdto=" + CardCode
     return True
 
 # Attach E-Amusement card to this ID
 def attachCard(Cookie, CardCode, passwd):
-    return True
+    attachURL = "https://p.eagate.573.jp/gate/p/eamusement/attach/index.html"
+    opener = urlre.build_opener()
+    opener.addheaders.append(("Cookie", Cookie))
+    attachHTML = opener.open(attachURL).read()
+    soup = bs(attachHTML, 'html.parser')
+    data = {
+        "ucd": CardCode,
+        "pass": passwd,
+        "ecprop": "2",
+    }
+    headers = dict(header)
+    headers.update({
+        "Referer": "https://p.eagate.573.jp/gate/p/eamusement/attach/index.html",
+        "Cookie": Cookie
+    })
+    data.update({hidden['name']: hidden['value'] for hidden in soup.find_all("input", type="hidden")})
+
+    conn = http.client.HTTPSConnection('p.eagate.573.jp', 443)
+    conn.request("POST", "/gate/p/eamusement/attach/end.html", urlps.urlencode(data), headers)
 
 if __name__ == "__main__":
     Cookie = GetCookie()
-    opener = urlre.build_opener()
-    opener.addheaders.append(("Cookie", Cookie))
-    login = opener.open("https://p.eagate.573.jp/game/reflec/reflesia/p/profile/index.html")
-    with open("result.txt", 'wb') as f:
-        f.write(login.read())
+    attachCard(Cookie, "CARD_CODE_NAMBER", "CARD_PASSWORD")
