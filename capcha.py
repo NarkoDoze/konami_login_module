@@ -75,7 +75,17 @@ def getCardFromID(Cookie):
 # Detech E-Amusement card from this ID
 def detachCard(Cookie, CardCode):
     detachURL = "http://p.eagate.573.jp/gate/p/eamusement/detach/setting1.html?ucdto=" + CardCode
-    return True
+    opener = urlre.build_opener()
+    opener.addheaders.append(("Cookie", Cookie))
+    detachHTML = opener.open(detachURL).read()
+    headers = dict(header)
+    headers.update({
+        "Referer": detachURL,
+        "Cookie": Cookie
+    })
+    requestTo = regex.findall("<a href=\"(.*?)\" target=\"_self\" class=\"\">", str(detachHTML))[-1]
+    conn = http.client.HTTPSConnection('p.eagate.573.jp', 443)
+    conn.request("GET", requestTo, "", headers)
 
 # Attach E-Amusement card to this ID
 def attachCard(Cookie, CardCode, passwd):
@@ -91,7 +101,7 @@ def attachCard(Cookie, CardCode, passwd):
     }
     headers = dict(header)
     headers.update({
-        "Referer": "https://p.eagate.573.jp/gate/p/eamusement/attach/index.html",
+        "Referer": attachURL,
         "Cookie": Cookie
     })
     data.update({hidden['name']: hidden['value'] for hidden in soup.find_all("input", type="hidden")})
@@ -102,3 +112,4 @@ def attachCard(Cookie, CardCode, passwd):
 if __name__ == "__main__":
     Cookie = GetCookie()
     attachCard(Cookie, "CARD_CODE_NAMBER", "CARD_PASSWORD")
+    detachCard(Cookie, "CARD_CODE_NAMBER")
