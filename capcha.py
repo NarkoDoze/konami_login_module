@@ -68,9 +68,12 @@ def GetCookie():
 
 # Get E-Amusement card code that is attached in this ID
 def getCardFromID(Cookie):
-    listURL = "https://p.eagate.573.jp/gate/p/eamusement/detach/index.html"
-    # Need to use BeautifulSoup and Regex
-    return ["YOUR_CARD_CODE1", "YOUR_CARD_CODE2"]
+    JsonListURL = "http://p.eagate.573.jp/gate/p/eapass/api/eapassinfo_json.html"
+    opener = urlre.build_opener()
+    opener.addheaders.append(("Cookie", Cookie))
+    soup = bs(opener.open(JsonListURL).read(), 'html.parser')
+    data = json.loads(soup.text)
+    return data['cardnumber']
 
 # Detech E-Amusement card from this ID
 def detachCard(Cookie, CardCode):
@@ -86,6 +89,7 @@ def detachCard(Cookie, CardCode):
     requestTo = regex.findall("<a href=\"(.*?)\" target=\"_self\" class=\"\">", str(detachHTML))[-1]
     conn = http.client.HTTPSConnection('p.eagate.573.jp', 443)
     conn.request("GET", requestTo, "", headers)
+    # TODO : Check It is successfully completed
 
 # Attach E-Amusement card to this ID
 def attachCard(Cookie, CardCode, passwd):
@@ -108,8 +112,20 @@ def attachCard(Cookie, CardCode, passwd):
 
     conn = http.client.HTTPSConnection('p.eagate.573.jp', 443)
     conn.request("POST", "/gate/p/eamusement/attach/end.html", urlps.urlencode(data), headers)
+    # TODO : Check It is successfully completed
+
+# Get played game list from this card
+def playedGames(Cookie):
+    JsonListURL = "http://p.eagate.573.jp/gate/p/eapass/api/eapassinfo_json.html"
+    opener = urlre.build_opener()
+    opener.addheaders.append(("Cookie", Cookie))
+    soup = bs(opener.open(JsonListURL).read(), 'html.parser')
+    data = json.loads(soup.text)
+    return [{'title' : data['title'], 'img' : data['img'].replace('myp_icon', 'myp_icon_PC')} for data in data['playdatalist'] if data['title'] != '']
 
 if __name__ == "__main__":
     Cookie = GetCookie()
     attachCard(Cookie, "CARD_CODE_NAMBER", "CARD_PASSWORD")
     detachCard(Cookie, "CARD_CODE_NAMBER")
+    getCardFromID(Cookie)
+    playedGames(Cookie)
